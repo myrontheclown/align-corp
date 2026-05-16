@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access info",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["employee", "manager", "admin"] },
+        "managerId": { "type": "string", "description": "UID of the manager" },
+        "department": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "Performance goal for an employee",
+      "type": "object",
+      "properties": {
+        "goalId": { "type": "string" },
+        "userId": { "type": "string", "description": "UID of the employee" },
+        "managerId": { "type": "string", "description": "UID of the employee's manager at creation time" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "active", "completed", "archived"] },
+        "category": { "type": "string" },
+        "targetDate": { "type": "string", "format": "date-time" },
+        "progress": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Quarterly performance review",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string" },
+        "userId": { "type": "string" },
+        "managerId": { "type": "string" },
+        "quarter": { "type": "number", "description": "1-4" },
+        "year": { "type": "number" },
+        "selfAssessment": { "type": "string" },
+        "managerFeedback": { "type": "string" },
+        "rating": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "submitted", "reviewed", "finalized"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "quarter", "year", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "Employee performance goals"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Quarterly performance reviews"
+    },
+    "/checkins/{checkinId}": {
+      "schema": "CheckIn",
+      "description": "Goal status check-ins"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Security and activity logs"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "UserSession",
+      "description": "User activity tracking"
+    }
+  }
+}

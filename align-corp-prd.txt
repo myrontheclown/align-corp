@@ -1,0 +1,723 @@
+# Product Requirements Document (PRD)
+
+## AtomQuest Hackathon 1.0
+
+### In-House Goal Setting & Tracking Portal
+
+---
+
+# 1. Project Overview
+
+## Project Name
+
+**AtomGoal**
+(you can rename later)
+
+---
+
+## Problem Statement
+
+Organizations currently manage employee goals using fragmented systems like spreadsheets, emails, and manual review processes. This leads to:
+
+* poor visibility
+* weak accountability
+* inconsistent tracking
+* delayed reviews
+* lack of centralized reporting
+
+The objective is to build a web-based Goal Setting & Tracking Portal that digitizes:
+
+* goal creation
+* approvals
+* quarterly tracking
+* reporting
+* governance workflows
+
+---
+
+# 2. Project Goal
+
+Build a polished enterprise-style web portal where:
+
+* Employees create and track goals
+* Managers review and approve goals
+* Admins oversee organization-wide progress
+
+The system should support:
+
+* structured workflows
+* validation rules
+* role-based access
+* quarterly check-ins
+* reporting dashboards
+* audit logging
+
+---
+
+# 3. Primary Users
+
+| Role         | Description                           |
+| ------------ | ------------------------------------- |
+| Employee     | Creates and updates goals             |
+| Manager (L1) | Reviews and approves goals            |
+| Admin / HR   | Manages cycles, visibility, reporting |
+
+---
+
+# 4. Core Features
+
+---
+
+# MODULE 1
+
+# Authentication & Role System
+
+## Functional Requirements
+
+### Users can:
+
+* Login securely
+* Access role-based dashboards
+
+### Roles:
+
+* Employee
+* Manager
+* Admin
+
+---
+
+## Recommended Implementation
+
+### If using Supabase
+
+Use:
+
+* Supabase Auth
+* role field in users table
+
+### If using Firebase
+
+Use:
+
+* Firebase Authentication
+* Firestore user roles
+
+---
+
+# MODULE 2
+
+# Goal Creation System
+
+## Employee Features
+
+Employees can:
+
+* Create Goal Sheet
+* Add multiple goals
+* Edit goals before submission
+* Submit goals to manager
+
+---
+
+## Goal Fields
+
+| Field       | Type        |
+| ----------- | ----------- |
+| Goal Title  | Text        |
+| Description | Textarea    |
+| Thrust Area | Dropdown    |
+| UoM Type    | Select      |
+| Target      | Number/Text |
+| Weightage   | Number      |
+| Status      | Enum        |
+
+---
+
+## UoM Types
+
+| Type     | Meaning                      |
+| -------- | ---------------------------- |
+| Min      | Higher achievement is better |
+| Max      | Lower value is better        |
+| Timeline | Deadline-based               |
+| Zero     | 0 means success              |
+
+---
+
+# Validation Rules
+
+## Rule 1
+
+Total weightage = 100%
+
+## Rule 2
+
+Minimum goal weightage = 10%
+
+## Rule 3
+
+Maximum goals = 8
+
+## Rule 4
+
+No submission unless validations pass
+
+---
+
+## UI Requirements
+
+### Goal Form
+
+* Add/remove goals dynamically
+* Live total weightage tracker
+* Validation messages
+* Responsive UI
+
+---
+
+# MODULE 3
+
+# Goal Approval Workflow
+
+## Manager Features
+
+Manager can:
+
+* View submitted goals
+* Edit targets
+* Edit weightages
+* Approve goals
+* Reject goals with comments
+
+---
+
+## Workflow
+
+```text id="1jx76m"
+Draft → Submitted → Under Review → Approved → Locked
+```
+
+---
+
+## Goal Locking
+
+After approval:
+
+* Employee cannot edit
+* Only Admin can unlock
+
+---
+
+# MODULE 4
+
+# Shared Goals System
+
+## Functional Requirements
+
+Manager/Admin can:
+
+* Assign common goals to multiple employees
+
+Employees:
+
+* Can modify weightage only
+* Cannot edit title/target
+
+---
+
+## Sync Logic
+
+If primary owner updates achievement:
+
+* linked goals auto-update
+
+---
+
+# MODULE 5
+
+# Quarterly Check-ins
+
+## Employee Features
+
+Employees can:
+
+* Update achievements quarterly
+* Add actual progress
+* Change status
+
+---
+
+## Status Options
+
+| Status      |
+| ----------- |
+| Not Started |
+| On Track    |
+| Completed   |
+
+---
+
+## Quarterly Windows
+
+| Quarter      | Active Month |
+| ------------ | ------------ |
+| Goal Setting | May          |
+| Q1           | July         |
+| Q2           | October      |
+| Q3           | January      |
+| Q4           | March/April  |
+
+---
+
+## Restrictions
+
+Outside active windows:
+
+* edits disabled
+* view-only mode
+
+---
+
+# MODULE 6
+
+# Progress Calculation Engine
+
+## Formulas
+
+### Min Type
+
+\text{Progress}=\frac{Achievement}{Target}
+
+---
+
+### Max Type
+
+\text{Progress}=\frac{Target}{Achievement}
+
+---
+
+### Zero Type
+
+```text id="3s3bht"
+If Achievement == 0:
+    Progress = 100%
+Else:
+    Progress = 0%
+```
+
+---
+
+### Timeline Type
+
+Compare:
+
+* completion date
+* deadline
+
+---
+
+# MODULE 7
+
+# Manager Check-in Dashboard
+
+## Features
+
+Manager can:
+
+* View team progress
+* Compare planned vs actual
+* Add quarterly comments
+
+---
+
+## Dashboard Elements
+
+* Employee cards
+* Progress bars
+* Status indicators
+* Quarter tabs
+* Comments section
+
+---
+
+# MODULE 8
+
+# Admin Dashboard
+
+## Features
+
+Admin can:
+
+* Manage users
+* Unlock goals
+* View reports
+* Monitor completion rates
+* View audit logs
+
+---
+
+## Dashboard Widgets
+
+| Widget            | Purpose                |
+| ----------------- | ---------------------- |
+| Completion %      | Track check-ins        |
+| Pending Approvals | Workflow tracking      |
+| Goal Distribution | Analytics              |
+| Quarterly Trends  | Performance visibility |
+
+---
+
+# MODULE 9
+
+# Audit Trail System
+
+## Functional Requirements
+
+System logs:
+
+* field changes
+* old value
+* new value
+* timestamp
+* modified by
+
+---
+
+## Example
+
+```text id="nrn62y"
+Manager changed target:
+50 → 70
+Time: 4:12 PM
+```
+
+---
+
+# MODULE 10
+
+# Reporting & Export
+
+## Reports
+
+### Achievement Report
+
+Export:
+
+* CSV
+* Excel
+
+Contains:
+
+* employee
+* goal
+* target
+* achievement
+* status
+
+---
+
+## Completion Dashboard
+
+Shows:
+
+* employees completed
+* managers pending
+* overdue check-ins
+
+---
+
+# 5. Good-to-Have Features
+
+---
+
+# Feature 1
+
+# Email Notifications
+
+## Triggers
+
+* Goal submission
+* Approval/rejection
+* Check-in reminders
+
+---
+
+# Feature 2
+
+# Analytics Dashboard
+
+## Charts
+
+* QoQ trends
+* Completion heatmaps
+* Department performance
+* Manager effectiveness
+
+---
+
+# Feature 3
+
+# Escalation System
+
+## Conditions
+
+* Goal not submitted
+* Approval pending
+* Check-in overdue
+
+---
+
+# 6. Recommended Tech Stack
+
+| Layer    | Tech                     |
+| -------- | ------------------------ |
+| Frontend | Next.js                  |
+| Styling  | Tailwind CSS + shadcn/ui |
+| Backend  | Supabase                 |
+| Database | PostgreSQL               |
+| Auth     | Supabase Auth            |
+| Charts   | Recharts                 |
+| Hosting  | Vercel                   |
+
+---
+
+# 7. Recommended Database Schema
+
+## users
+
+```sql id="w6n1eb"
+id
+name
+email
+role
+manager_id
+department
+```
+
+---
+
+## goals
+
+```sql id="6bkx6t"
+id
+employee_id
+title
+description
+thrust_area
+uom_type
+target
+achievement
+weightage
+status
+is_locked
+quarter
+shared_goal_id
+```
+
+---
+
+## checkins
+
+```sql id="t2o5kr"
+id
+goal_id
+quarter
+achievement
+status
+manager_comment
+```
+
+---
+
+## audit_logs
+
+```sql id="vpyay9"
+id
+user_id
+action
+field_name
+old_value
+new_value
+timestamp
+```
+
+---
+
+# 8. UI Screens
+
+---
+
+# Authentication
+
+* Login page
+
+---
+
+# Employee
+
+* Dashboard
+* Goal Form
+* Quarterly Check-ins
+* Goal History
+
+---
+
+# Manager
+
+* Team Dashboard
+* Goal Approval Screen
+* Check-in Review Panel
+
+---
+
+# Admin
+
+* Analytics Dashboard
+* User Management
+* Audit Logs
+* Reports
+
+---
+
+# 9. Suggested Development Timeline
+
+## Since you only have ~1 day ⚡
+
+---
+
+# PRIORITY ORDER
+
+## PHASE 1 (FIRST 4 HOURS)
+
+### Core setup
+
+* Next.js setup
+* Supabase setup
+* Authentication
+* Role system
+
+---
+
+## PHASE 2
+
+### Goal creation
+
+* CRUD goals
+* validation
+* submission flow
+
+---
+
+## PHASE 3
+
+### Manager approval
+
+* approve/reject
+* lock goals
+
+---
+
+## PHASE 4
+
+### Quarterly check-ins
+
+* progress updates
+* comments
+* status
+
+---
+
+## PHASE 5
+
+### Dashboards
+
+* analytics
+* charts
+* reports
+
+---
+
+## PHASE 6
+
+### Polish
+
+* animations
+* responsiveness
+* demo data
+* bug fixes
+
+---
+
+# 10. Demo Flow
+
+## Employee Journey
+
+1. Login
+2. Create goals
+3. Submit goals
+
+---
+
+## Manager Journey
+
+1. Review goals
+2. Edit target
+3. Approve
+
+---
+
+## Employee
+
+1. Goals locked
+2. Update quarterly progress
+
+---
+
+## Admin
+
+1. View analytics
+2. Export report
+3. View audit logs
+
+---
+
+# 11. Hackathon Strategy
+
+DO NOT attempt:
+
+* enterprise perfection
+* complex microservices
+* overengineering
+
+FOCUS ON:
+
+* smooth workflows
+* polished UI
+* realistic dashboards
+* role separation
+* working validations
+
+---
+
+# 12. Final Recommendation
+
+Use:
+
+* Google Stitch for UI generation
+* Google AI Studio for demos/prompts
+* Gemini CLI for rapid generation
+* Supabase backend
+
+Supabase is likely the better choice because:
+
+* relational database fits this project
+* role management is easier
+* audit logs are cleaner
+* dashboards become simpler
+
+Firebase is faster for prototyping, but this project behaves more like ERP software than a realtime chat app.
+
+Your biggest advantage now is:
+
+> build fewer things, but make them feel production-ready 🏢✨

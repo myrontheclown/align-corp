@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'myrondcrz15@gmail.com'
+      );
+    }
+
+    function isManagerOf(data) {
+      return isSignedIn() && request.auth.uid == data.managerId;
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.email == request.auth.token.email &&
+             data.role in ['employee', 'manager', 'admin'] &&
+             data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.keys().size() >= 3;
+    }
+
+    function isValidGoal(data) {
+      return data.userId is string &&
+             data.title is string && data.title.size() <= 200 &&
+             data.status in ['draft', 'active', 'completed', 'archived'] &&
+             (data.progress == null || (data.progress >= 0 && data.progress <= 100)) &&
+             data.keys().hasAll(['userId', 'title', 'status']) &&
+             data.userId == request.auth.uid; // Common case: users create their own goals
+    }
+
+    function isValidReview(data) {
+      return data.userId is string &&
+             data.quarter >= 1 && data.quarter <= 4 &&
+             data.year >= 2000 && data.year <= 2100 &&
+             data.status in ['draft', 'submitted', 'reviewed', 'finalized'] &&
+             data.keys().hasAll(['userId', 'quarter', 'year', 'status']);
+    }
+
+    // --- Rules ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if (isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'department'])
+      )) || isAdmin();
+    }
+
+    match /goals/{goalId} {
+      allow get: if isOwner(existing().userId) || isManagerOf(existing()) || isAdmin();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.managerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidGoal(incoming()) && isOwner(incoming().userId);
+      allow update: if isSignedIn() && (
+        (isOwner(existing().userId) && isValidGoal(incoming()) && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'progress', 'status', 'category', 'targetDate', 'updatedAt'])
+        ) ||
+        (isManagerOf(existing()) && isValidGoal(incoming()) &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+        ) ||
+        isAdmin()
+      );
+      allow delete: if isOwner(existing().userId) || isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow get: if isOwner(existing().userId) || isManagerOf(existing()) || isAdmin();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.managerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidReview(incoming()) && isOwner(incoming().userId);
+      allow update: if isSignedIn() && (
+        (isOwner(existing().userId) && isValidReview(incoming()) && 
+         existing().status in ['draft', 'submitted'] &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['selfAssessment', 'status', 'updatedAt'])
+        ) ||
+        (isManagerOf(existing()) && isValidReview(incoming()) &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['managerFeedback', 'rating', 'status', 'updatedAt'])
+        ) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /checkins/{checkinId} {
+      allow get: if isOwner(existing().userId) || isManagerOf(get(/databases/$(database)/documents/goals/$(existing().goalId)).data) || isAdmin();
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+
+    match /audit_logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isSignedIn(); // System can log anything
+    }
+
+    match /sessions/{sessionId} {
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+  }
+}
