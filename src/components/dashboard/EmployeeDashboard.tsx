@@ -11,8 +11,7 @@ import { TaskList } from './tasks/TaskList';
 import { AnalyticsWidgets } from './analytics/AnalyticsWidgets';
 
 const GoalCard: React.FC<{ goal: Goal }> = ({ goal }) => {
-// ... (rest of GoalCard component remains the same)
-
+  const statusColors: Record<GoalStatus, string> = {
     draft: 'bg-amber-100 text-amber-600',
     pending: 'bg-indigo-100 text-indigo-600',
     active: 'bg-blue-100 text-blue-600',
