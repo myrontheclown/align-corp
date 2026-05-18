@@ -23,6 +23,8 @@ import {
   Target
 } from 'lucide-react';
 
+import { ToastProvider } from './components/ToastProvider';
+
 // --- Auth Components ---
 
 const RoleRedirect = () => {
@@ -282,9 +284,10 @@ const CalendarContainer = () => {
 };
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
+    <ToastProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -331,5 +334,6 @@ export default function App() {
         </Routes>
       </Router>
     </AuthProvider>
+  </ToastProvider>
   );
 }
