@@ -9,10 +9,12 @@ export interface UserProfile {
   role: UserRole;
   managerId?: string;
   department?: string;
+  lastActive?: Timestamp;
+  status?: 'online' | 'offline';
   createdAt?: Timestamp;
 }
 
-export type GoalStatus = 'draft' | 'active' | 'completed' | 'archived';
+export type GoalStatus = 'draft' | 'pending' | 'active' | 'completed' | 'archived';
 
 export interface Goal {
   id: string;
@@ -24,8 +26,45 @@ export interface Goal {
   category: string;
   targetDate: Timestamp;
   progress: number;
+  weightage: number;
+  managerComments?: string;
+  isLocked?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+export type TaskStatus = 'Pending' | 'In Progress' | 'Review Needed' | 'Completed';
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+
+export interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  deadline?: Timestamp;
+  estimatedDurationMinutes: number;
+  actualDurationMinutes: number;
+  subtasks: Subtask[];
+  notes: string[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface TaskSession {
+  id: string;
+  taskId: string;
+  userId: string;
+  startTime: Timestamp;
+  endTime?: Timestamp;
+  durationMinutes: number;
 }
 
 export type ReviewStatus = 'draft' | 'submitted' | 'reviewed' | 'finalized';
@@ -56,10 +95,16 @@ export interface CheckIn {
 export interface AuditLog {
   id: string;
   userId: string;
+  userName: string;
+  userRole: UserRole;
   action: string;
   resourceId: string;
-  resourceType: 'goal' | 'review' | 'checkin' | 'user';
-  details: any;
+  resourceType: 'goal' | 'review' | 'checkin' | 'user' | 'task' | 'task_session';
+  details: {
+    oldValue?: any;
+    newValue?: any;
+    [key: string]: any;
+  };
   createdAt: Timestamp;
 }
 

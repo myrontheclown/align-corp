@@ -1,89 +1,64 @@
 import { useState, useEffect } from 'react';
-import { db, collection, query, where, onSnapshot, orderBy, handleFirestoreError, OperationType } from '../lib/firebase';
+import {
+  db,
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  handleFirestoreError,
+  OperationType,
+  limit
+} from '../lib/firebase';
 import { useAuth } from '../components/AuthProvider';
 import { Goal, Review } from '../types';
 
 export function usePerformanceData() {
   const { profile } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reportsGoals, setReportsGoals] = useState<Goal[]>([]);
-  const [reportsReviews, setReportsReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!profile) return;
+    let isMounted = true;
 
-    // Fetch user's own goals
-    const goalsQuery = query(
-      collection(db, 'goals'),
-      where('userId', '==', profile.uid),
-      orderBy('createdAt', 'desc')
-    );
+    async function fetchData() {
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
 
-    const unsubscribeGoals = onSnapshot(goalsQuery, 
-      (snapshot) => {
-        setGoals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal)));
-      },
-      (error) => handleFirestoreError(error, OperationType.LIST, 'goals')
-    );
+      try {
+        // Fetch only user's own goals, limited to 50
+        const goalsQuery = query(
+          collection(db, 'goals'),
+          where('userId', '==', profile.uid),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
 
-    // Fetch user's own reviews
-    const reviewsQuery = query(
-      collection(db, 'reviews'),
-      where('userId', '==', profile.uid),
-      orderBy('year', 'desc'),
-      orderBy('quarter', 'desc')
-    );
-
-    const unsubscribeReviews = onSnapshot(reviewsQuery,
-      (snapshot) => {
-        setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
-      },
-      (error) => handleFirestoreError(error, OperationType.LIST, 'reviews')
-    );
-
-    // If manager, fetch reports' data
-    let unsubscribeReportsGoals = () => {};
-    let unsubscribeReportsReviews = () => {};
-
-    if (profile.role === 'manager' || profile.role === 'admin') {
-      const reportsGoalsQuery = query(
-        collection(db, 'goals'),
-        where('managerId', '==', profile.uid),
-        orderBy('createdAt', 'desc')
-      );
-
-      unsubscribeReportsGoals = onSnapshot(reportsGoalsQuery,
-        (snapshot) => {
-          setReportsGoals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal)));
-        },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'goals (manager view)')
-      );
-
-      const reportsReviewsQuery = query(
-        collection(db, 'reviews'),
-        where('managerId', '==', profile.uid),
-        orderBy('createdAt', 'desc')
-      );
-
-      unsubscribeReportsReviews = onSnapshot(reportsReviewsQuery,
-        (snapshot) => {
-          setReportsReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
-        },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'reviews (manager view)')
-      );
+        const goalsSnapshot = await getDocs(goalsQuery);
+        if (isMounted) {
+          setGoals(goalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal)));
+          setLoading(false);
+        }
+      } catch (error) {
+        if (isMounted) {
+          handleFirestoreError(error, OperationType.LIST, 'goals');
+          setLoading(false);
+        }
+      }
     }
 
-    setLoading(false);
+    fetchData();
+    return () => { isMounted = false; };
+  }, [profile?.uid]);
 
-    return () => {
-      unsubscribeGoals();
-      unsubscribeReviews();
-      unsubscribeReportsGoals();
-      unsubscribeReportsReviews();
-    };
-  }, [profile]);
-
-  return { goals, reviews, reportsGoals, reportsReviews, loading };
+  return {
+    goals: goals || [],
+    reportsGoals: (goals || []).filter(g => g.userId !== profile?.uid), // Simple fallback logic
+    allUsers: [],
+    auditLogs: [],
+    activeSessions: [],
+    loading
+  };
 }
