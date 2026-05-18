@@ -4,7 +4,11 @@ import { Clock, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { Task } from '../../../types';
 import { TaskTimer } from './TaskTimer';
 
-export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+export const TaskCard: React.FC<{ 
+  task: Task;
+  onTimerStart?: (taskId: string) => void;
+  onCompleteTask?: (taskId: string) => void;
+}> = ({ task, onTimerStart, onCompleteTask }) => {
   const isOverdue = task.deadline && task.deadline.toDate() < new Date() && task.status !== 'Completed';
   const timeVariance = task.actualDurationMinutes - task.estimatedDurationMinutes;
   const isInefficient = timeVariance > 0;
@@ -56,7 +60,20 @@ export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
             {task.priority}
           </div>
         </div>
-        <TaskTimer task={task} />
+        <div className="flex items-center gap-2">
+            <button 
+                onClick={() => onTimerStart?.(task.id)}
+                className="p-1 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded"
+            >
+                <Clock size={16} />
+            </button>
+            <button 
+                onClick={() => onCompleteTask?.(task.id)}
+                className="p-1 hover:bg-green-50 text-slate-400 hover:text-emerald-600 rounded"
+            >
+                <Square size={16} />
+            </button>
+        </div>
       </div>
     </motion.div>
   );

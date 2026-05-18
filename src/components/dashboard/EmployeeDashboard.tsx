@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Target, ListTodo, Loader2 } from 'lucide-react';
-import { db, collection, addDoc, Timestamp } from '../../lib/firebase';
+import { Plus, Target, ListTodo, Loader2, Play, Pause, Square, Zap } from 'lucide-react';
+import { db, collection, addDoc, Timestamp, doc, updateDoc } from '../../lib/firebase';
 import { useAuth } from '../AuthProvider';
 import { usePerformanceData } from '../../hooks/usePerformanceData';
 import { useTasks } from '../../hooks/useTasks';
-// import { useTaskSessions } from '../../hooks/useTaskSessions';
-// import { useAuditLogs } from '../../hooks/useAuditLogs';
-import { Goal, GoalStatus } from '../../types';
+import { Goal, GoalStatus, Task } from '../../types';
 import { logAction } from '../../lib/db';
 import { TaskList } from './tasks/TaskList';
 import { AnalyticsWidgets } from './analytics/AnalyticsWidgets';
-// import { ActivityFeed } from './ActivityFeed';
 
 const GoalCard: React.FC<{ goal: Goal }> = ({ goal }) => {
-  const statusColors: Record<GoalStatus, string> = {
+// ... (rest of GoalCard component remains the same)
+
     draft: 'bg-amber-100 text-amber-600',
     pending: 'bg-indigo-100 text-indigo-600',
     active: 'bg-blue-100 text-blue-600',
@@ -102,6 +100,24 @@ export const EmployeeDashboard = () => {
 
   const { goals } = usePerformanceData();
   const { tasks } = useTasks();
+  
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isTimerRunning) {
+      timerRef.current = setInterval(() => {
+        setTimerSeconds(prev => prev + 1);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isTimerRunning]);
 
   // TEMPORARILY DISABLED FOR FIRESTORE STABILITY
   // const { sessions } = useTaskSessions();
@@ -223,8 +239,34 @@ export const EmployeeDashboard = () => {
     }
   };
 
+  const updateTaskStatus = async (taskId: string, status: Task['status']) => {
+    try {
+      const taskRef = doc(db, 'tasks', taskId);
+      await updateDoc(taskRef, {
+        status,
+        updatedAt: Timestamp.now()
+      });
+    } catch (e) {
+      console.error('Error updating task status:', e);
+    }
+  };
+
+  const productivityScore = Math.min(100, Math.round((safeTasks.filter(t => t.status === 'Completed').length / (safeTasks.length || 1)) * 100));
+  const focusHours = Math.round(safeTasks.reduce((acc, t) => acc + (t.actualDurationMinutes || 0), 0) / 60);
+
+  const getRecommendations = () => {
+    const recs = [];
+    if (safeTasks.filter(t => t.status === 'Pending' && t.priority === 'High').length > 0) recs.push('Focus on your high-priority pending tasks.');
+    if (safeTasks.filter(t => t.deadline && t.deadline.toDate() < new Date()).length > 2) recs.push('You have several overdue tasks; consider rescheduling.');
+    if (productivityScore < 50) recs.push('Productivity is lower than usual; try a short focus session.');
+    return recs;
+  };
+
+  const recommendations = getRecommendations();
+
   return (
     <div className="max-w-7xl mx-auto space-y-10">
+      {/* (header remains the same) */}
       <header className="flex justify-between items-start">
         <div>
           <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -239,30 +281,73 @@ export const EmployeeDashboard = () => {
           </p>
         </div>
 
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col items-end gap-4">
           <PresenceIndicator
             status={profile?.status}
           />
+          
+          {activeTaskId && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-2xl flex items-center gap-4 shadow-xl shadow-indigo-200"
+            >
+              <div className="flex items-center gap-2">
+                <Zap className="animate-pulse" size={18} fill="currentColor" />
+                <span className="font-bold text-xs uppercase tracking-widest">
+                  Deep Work Active
+                </span>
+              </div>
+              <span className="font-mono text-xl font-bold tabular-nums">
+                {Math.floor(timerSeconds / 60)}:{(timerSeconds % 60).toString().padStart(2, '0')}
+              </span>
+              <div className="flex gap-2 border-l border-indigo-500 pl-4">
+                {isTimerRunning ? (
+                  <button onClick={pauseTimer}><Pause size={18} /></button>
+                ) : (
+                  <button onClick={() => setIsTimerRunning(true)}><Play size={18} /></button>
+                )}
+                <button onClick={stopTimer}><Square size={18} /></button>
+              </div>
+            </motion.div>
+          )}
 
-          <button className="bg-white text-slate-900 border border-slate-200 px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
-            <Plus size={18} />
-            New Task
-          </button>
+          <div className="flex gap-4">
+            <button className="bg-white text-slate-900 border border-slate-200 px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
+              <Plus size={18} />
+              New Task
+            </button>
 
-          <button
-            onClick={() =>
-              setShowGoalModal(true)
-            }
-            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200"
-          >
-            <Plus size={18} />
-            New Objective
-          </button>
+            <button
+              onClick={() =>
+                setShowGoalModal(true)
+              }
+              className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200"
+            >
+              <Plus size={18} />
+              New Objective
+            </button>
+          </div>
         </div>
       </header>
-
-      {/* TEMPORARILY SIMPLIFIED */}
-      <AnalyticsWidgets tasks={tasks} />
+      
+      {/* Productivity Score Board */}
+      <div className="grid grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Productivity Score</h3>
+            <p className="text-4xl font-extrabold text-indigo-600 mt-2">{productivityScore}%</p>
+        </div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Focus Hours</h3>
+            <p className="text-4xl font-extrabold text-slate-900 mt-2">{focusHours}h</p>
+        </div>
+        <div className="col-span-2 bg-gradient-to-r from-indigo-600 to-purple-600 p-6 rounded-3xl text-white shadow-xl shadow-indigo-200">
+            <h3 className="text-xs font-bold opacity-80 uppercase tracking-widest">Recommended Actions</h3>
+            <ul className="mt-4 space-y-2">
+                {recommendations.slice(0, 2).map((r, i) => <li key={i} className="text-sm font-medium flex items-center gap-2"><span>•</span> {r}</li>)}
+            </ul>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-6">
@@ -312,12 +397,16 @@ export const EmployeeDashboard = () => {
             tasks={tasks}
             status="In Progress"
             title="In Progress"
+            onTimerStart={startTimer}
+            onCompleteTask={completeTask}
           />
 
           <TaskList
             tasks={tasks}
             status="Pending"
             title="Pending"
+            onTimerStart={startTimer}
+            onCompleteTask={completeTask}
           />
         </div>
       </div>
