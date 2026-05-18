@@ -12,6 +12,7 @@ import {
 } from '../lib/firebase';
 import { useAuth } from '../components/AuthProvider';
 import { Task } from '../types';
+import { getDemoData } from '../lib/demoDataManager';
 
 export function useTasks() {
   const { profile } = useAuth();
@@ -32,17 +33,34 @@ export function useTasks() {
           collection(db, 'tasks'),
           where('userId', '==', profile.uid),
           orderBy('createdAt', 'desc'),
-          limit(15)
+          limit(50)
         );
 
         const snapshot = await getDocs(tasksQuery);
+        const firestoreTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        
+        // Merge with demo data
+        const { tasks: demoTasks } = getDemoData();
+        const mergedTasks = [...firestoreTasks];
+        
+        // Only add demo tasks that don't overlap with firestore tasks (by title for simplicity in demo)
+        const firestoreTaskTitles = new Set(firestoreTasks.map(t => t.title.toLowerCase()));
+        demoTasks.forEach((dt: Task) => {
+          if (!firestoreTaskTitles.has(dt.title.toLowerCase())) {
+            mergedTasks.push(dt);
+          }
+        });
+
         if (isMounted) {
-          setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
+          setTasks(mergedTasks.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()));
           setLoading(false);
         }
       } catch (error) {
         if (isMounted) {
           handleFirestoreError(error, OperationType.LIST, 'tasks');
+          // Fallback to demo data on error
+          const { tasks: demoTasks } = getDemoData();
+          setTasks(demoTasks as Task[]);
           setLoading(false);
         }
       }

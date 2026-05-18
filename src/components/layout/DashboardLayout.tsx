@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Target, FileText, Users, Shield, LogOut, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Target, FileText, Users, Shield, LogOut, TrendingUp, Calendar } from 'lucide-react';
 import { useAuth } from '../AuthProvider';
 import { trackSession } from '../../lib/db';
 
@@ -31,6 +31,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         <nav className="flex-1 px-5 space-y-1">
           {[
             { id: 'dashboard', path: `/${profile?.role}`, name: 'Dashboard Overview', icon: LayoutDashboard },
+            ...(profile?.role === 'employee' ? [{ id: 'calendar', path: '/employee/calendar', name: 'Calendar', icon: Calendar }] : []),
             ...(profile?.role === 'admin' ? [{ id: 'admin', path: '/admin', name: 'System Admin', icon: Shield }] : [])
           ].map((item) => (
             <button

@@ -11,7 +11,8 @@ import {
   limit
 } from '../lib/firebase';
 import { useAuth } from '../components/AuthProvider';
-import { Goal, Review } from '../types';
+import { Goal } from '../types';
+import { getDemoData } from '../lib/demoDataManager';
 
 export function usePerformanceData() {
   const { profile } = useAuth();
@@ -28,7 +29,6 @@ export function usePerformanceData() {
       }
 
       try {
-        // Fetch only user's own goals, limited to 50
         const goalsQuery = query(
           collection(db, 'goals'),
           where('userId', '==', profile.uid),
@@ -37,13 +37,28 @@ export function usePerformanceData() {
         );
 
         const goalsSnapshot = await getDocs(goalsQuery);
+        const firestoreGoals = goalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal));
+        
+        // Merge with demo data
+        const { goals: demoGoals } = getDemoData();
+        const mergedGoals = [...firestoreGoals];
+        
+        const firestoreGoalTitles = new Set(firestoreGoals.map(g => g.title.toLowerCase()));
+        demoGoals.forEach((dg: Goal) => {
+          if (!firestoreGoalTitles.has(dg.title.toLowerCase())) {
+            mergedGoals.push(dg);
+          }
+        });
+
         if (isMounted) {
-          setGoals(goalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal)));
+          setGoals(mergedGoals.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()));
           setLoading(false);
         }
       } catch (error) {
         if (isMounted) {
           handleFirestoreError(error, OperationType.LIST, 'goals');
+          const { goals: demoGoals } = getDemoData();
+          setGoals(demoGoals as Goal[]);
           setLoading(false);
         }
       }
@@ -55,7 +70,7 @@ export function usePerformanceData() {
 
   return {
     goals: goals || [],
-    reportsGoals: (goals || []).filter(g => g.userId !== profile?.uid), // Simple fallback logic
+    reportsGoals: (goals || []).filter(g => g.userId !== profile?.uid),
     allUsers: [],
     auditLogs: [],
     activeSessions: [],

@@ -7,7 +7,7 @@ interface TaskListProps {
   status: TaskStatus;
   title: string;
   onTimerStart?: (taskId: string) => void;
-  onCompleteTask?: (taskId: string) => void;
+  onCompleteTask?: (taskId: string, status: TaskStatus) => void;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({ tasks, status, title, onTimerStart, onCompleteTask }) => {

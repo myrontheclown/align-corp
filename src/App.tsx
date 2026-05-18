@@ -4,9 +4,11 @@ import { AuthProvider, useAuth } from './components/AuthProvider';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { auth } from './lib/firebase';
 import { EmployeeDashboard } from './components/dashboard/EmployeeDashboard';
+import { CalendarPage } from './components/dashboard/calendar/CalendarPage';
 import { ManagerDashboard } from './components/dashboard/ManagerDashboard';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
-import { DashboardLayout } from './components/layout/DashboardLayout';
+import { DashboardLayout } from './components/layout/DashboardLayout'; import { useTasks } from './hooks/useTasks';
+import { usePerformanceData } from './hooks/usePerformanceData';
 import {
   TrendingUp,
   Users,
@@ -269,7 +271,12 @@ const LoginPage = () => {
 };
 
 // --- Main App ---
-
+// Container to inject data to Calendar
+const CalendarContainer = () => {
+  const { tasks } = useTasks();
+  const { goals } = usePerformanceData();
+  return <CalendarPage tasks={tasks || []} goals={goals || []} />;
+};
 export default function App() {
   return (
     <AuthProvider>
@@ -278,9 +285,18 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
 
+
+
+
           <Route path="/employee" element={
             <ProtectedRoute allowedRoles={['employee']}>
               <DashboardLayout><EmployeeDashboard /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/employee/calendar" element={
+            <ProtectedRoute allowedRoles={['employee']}>
+              <DashboardLayout><CalendarContainer /></DashboardLayout>
             </ProtectedRoute>
           } />
 
