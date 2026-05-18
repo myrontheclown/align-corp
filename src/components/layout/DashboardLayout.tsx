@@ -32,7 +32,11 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           {[
             { id: 'dashboard', path: `/${profile?.role}`, name: 'Dashboard Overview', icon: LayoutDashboard },
             ...(profile?.role === 'employee' ? [{ id: 'calendar', path: '/employee/calendar', name: 'Calendar', icon: Calendar }] : []),
-            ...(profile?.role === 'admin' ? [{ id: 'admin', path: '/admin', name: 'System Admin', icon: Shield }] : [])
+            ...(profile?.role === 'manager' ? [{ id: 'calendar', path: '/manager/calendar', name: 'Workforce Calendar', icon: Calendar }] : []),
+            ...(profile?.role === 'admin' ? [
+                { id: 'admin', path: '/admin', name: 'System Admin', icon: Shield },
+                { id: 'admin-calendar', path: '/admin/calendar', name: 'Global Calendar', icon: Calendar }
+            ] : [])
           ].map((item) => (
             <button
               key={item.id}

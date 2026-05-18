@@ -8,9 +8,25 @@ export interface UserProfile {
   displayName: string;
   role: UserRole;
   managerId?: string;
+
   department?: string;
+
+  workload?: 'Low' | 'Moderate' | 'High' | 'Critical';
+
+  productivityScore?: number;
+
+  focusHours?: number;
+
+  completedTasks?: number;
+
+  activeGoals?: number;
+
+  avatarUrl?: string;
+
   lastActive?: Timestamp;
+
   status?: 'online' | 'offline';
+
   createdAt?: Timestamp;
 }
 
@@ -94,17 +110,35 @@ export interface CheckIn {
 
 export interface AuditLog {
   id: string;
+
   userId: string;
+
   userName: string;
+
   userRole: UserRole;
+
   action: string;
+
   resourceId: string;
-  resourceType: 'goal' | 'review' | 'checkin' | 'user' | 'task' | 'task_session';
+
+  resourceType:
+  | 'goal'
+  | 'review'
+  | 'checkin'
+  | 'user'
+  | 'task'
+  | 'task_session';
+
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+
+  detail?: string;
+
   details: {
     oldValue?: any;
     newValue?: any;
     [key: string]: any;
   };
+
   createdAt: Timestamp;
 }
 

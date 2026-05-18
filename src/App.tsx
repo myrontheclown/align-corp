@@ -6,8 +6,11 @@ import { auth } from './lib/firebase';
 import { EmployeeDashboard } from './components/dashboard/EmployeeDashboard';
 import { CalendarPage } from './components/dashboard/calendar/CalendarPage';
 import { ManagerDashboard } from './components/dashboard/ManagerDashboard';
+import { ManagerCalendarPage } from './components/dashboard/calendar/ManagerCalendarPage';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
-import { DashboardLayout } from './components/layout/DashboardLayout'; import { useTasks } from './hooks/useTasks';
+import { AdminCalendarPage } from './components/dashboard/calendar/AdminCalendarPage';
+import { DashboardLayout } from './components/layout/DashboardLayout';
+ import { useTasks } from './hooks/useTasks';
 import { usePerformanceData } from './hooks/usePerformanceData';
 import {
   TrendingUp,
@@ -306,9 +309,21 @@ export default function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/manager/calendar" element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <DashboardLayout><ManagerCalendarPage /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+
           <Route path="/admin" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <DashboardLayout><AdminDashboard /></DashboardLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/calendar" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <DashboardLayout><AdminCalendarPage /></DashboardLayout>
             </ProtectedRoute>
           } />
 
